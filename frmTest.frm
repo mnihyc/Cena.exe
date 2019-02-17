@@ -615,7 +615,7 @@ Dim res() As type_res
 Dim ylbl_num(6) As String
 Dim stoptest As Boolean
 Private Const BUFFER_LENGTH As Long = 102400
-Dim resenabled(201) As Boolean
+Dim resenabled(1050) As Boolean
 Private Const SHOW_LENGTH As Long = 10240
 
 Private Sub funstate(lbl As Label, state As Integer, Optional full As Boolean = False)

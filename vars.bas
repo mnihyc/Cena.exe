@@ -1,8 +1,8 @@
 Attribute VB_Name = "vars"
 Option Explicit
 Public exefile As String, infile As String, outfile As String, timeout As Double
-Public stdin(1 To 200) As String, stdinnum As Integer
-Public stdout(1 To 200) As String, stdoutnum As Integer
+Public stdin(1 To 1050) As String, stdinnum As Integer
+Public stdout(1 To 1050) As String, stdoutnum As Integer
 Public Type type_res
   id As Integer
   state As Boolean
