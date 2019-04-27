@@ -12,13 +12,21 @@ Begin VB.Form frmView
    MinButton       =   0   'False
    ScaleHeight     =   6795
    ScaleWidth      =   5550
+   Begin VB.CommandButton CommandFind 
+      Caption         =   "Find"
+      Height          =   315
+      Left            =   840
+      TabIndex        =   16
+      Top             =   2685
+      Width           =   780
+   End
    Begin VB.CommandButton CommandDiff 
       Caption         =   "Diff"
-      Height          =   285
-      Left            =   1170
+      Height          =   315
+      Left            =   1650
       TabIndex        =   15
-      Top             =   2700
-      Width           =   735
+      Top             =   2685
+      Width           =   780
    End
    Begin VB.CommandButton CommandJump 
       Caption         =   "Jump"
@@ -33,10 +41,10 @@ Begin VB.Form frmView
       Caption         =   "Jump"
       Height          =   315
       Index           =   0
-      Left            =   2460
+      Left            =   2445
       TabIndex        =   11
       Top             =   2685
-      Width           =   750
+      Width           =   780
    End
    Begin RichTextLib.RichTextBox Text3 
       Height          =   1335
@@ -47,6 +55,7 @@ Begin VB.Form frmView
       _ExtentX        =   9763
       _ExtentY        =   2355
       _Version        =   393217
+      Enabled         =   -1  'True
       ReadOnly        =   -1  'True
       ScrollBars      =   2
       TextRTF         =   $"frmView.frx":0000
@@ -60,6 +69,7 @@ Begin VB.Form frmView
       _ExtentX        =   9763
       _ExtentY        =   2566
       _Version        =   393217
+      Enabled         =   -1  'True
       ReadOnly        =   -1  'True
       ScrollBars      =   2
       TextRTF         =   $"frmView.frx":009D
@@ -73,6 +83,7 @@ Begin VB.Form frmView
       _ExtentX        =   9763
       _ExtentY        =   2566
       _Version        =   393217
+      Enabled         =   -1  'True
       ReadOnly        =   -1  'True
       ScrollBars      =   2
       TextRTF         =   $"frmView.frx":013A
@@ -259,7 +270,7 @@ End With
 End Sub
 
 ' Use ByRef to prevent unnecessary waste of time
-Private Sub DoTextJump(Text As RichTextBox, ByRef sarr() As String, ByRef curLine&, Optional line& = 1)
+Private Function DoTextJump(Text As RichTextBox, ByRef sarr() As String, ByRef curLine&, Optional line& = 1) As Long
   Dim i&, leng&: leng = UBound(sarr) + 1
   If line <= 0 Then: line = 0
   If line > leng Then: line = leng
@@ -299,7 +310,8 @@ Private Sub DoTextJump(Text As RichTextBox, ByRef sarr() As String, ByRef curLin
   'LineIndex = SendMessage(Text.hwnd, EM_LINEINDEX, line - curLine + 1, ByVal 0&)
   'SendMessage Text.hwnd, EM_SETSEL, LineIndex, ByVal LineIndex + 1
   Text.SelStart = ss: Text.SelLength = 0
-End Sub
+  DoTextJump = ss
+End Function
 
 Private Sub CommandDiff_Click()
   Dim i&, ss1$, ss2$
@@ -322,6 +334,23 @@ Private Sub CommandDiff_Click()
     End If
     i = i + 1
   Loop
+  Text2.SetFocus
+End Sub
+
+Private Sub CommandFind_Click()
+  Dim str$
+  str = ShowDialog("Input which text to find", Me, Text2.SelText)
+  If Len(str) = 0 Then: Exit Sub
+  Dim i&, pos&
+  For i = SendMessage(Text2.hwnd, EM_LINEFROMCHAR, Text2.SelStart, 0&) + curLine1 - 1 To UBound(s1)
+    pos = InStr(1, s1(i), str)
+    If pos > 0 Then
+      Dim ss$: ss = DoTextJump(Text2, s1, curLine1, i + 1)
+      Text2.SelStart = ss + pos - 1
+      Text2.SelLength = Len(str)
+      Exit For
+    End If
+  Next i
   Text2.SetFocus
 End Sub
 
@@ -365,16 +394,16 @@ End Sub
 Private Sub Form_Resize()
   Dim PosS() As String
   Dim Obj As Control
-  Dim Pos(4) As Double, ScaleX As Double, ScaleY As Double
+  Dim pos(4) As Double, ScaleX As Double, ScaleY As Double
   Dim i As Long
   ScaleX = Me.ScaleWidth / FormOldWidth
   ScaleY = Me.ScaleHeight / FormOldHeight
   For Each Obj In Me
     PosS = Split(Obj.Tag, " ")
     For i = 0 To 3
-      Pos(i) = CDbl(PosS(i))
+      pos(i) = CDbl(PosS(i))
     Next i
-    Obj.Move Pos(0) * ScaleX, Pos(1) * ScaleY, Pos(2) * ScaleX, Pos(3) * ScaleY
+    Obj.Move pos(0) * ScaleX, pos(1) * ScaleY, pos(2) * ScaleX, pos(3) * ScaleY
   Next Obj
 End Sub
 

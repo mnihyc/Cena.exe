@@ -122,8 +122,8 @@ End Enum
   
 Public Const INVALID_HANDLE_VALUE = -1
 
-Public Declare Function SendMessage Lib "user32" Alias "SendMessageA" (ByVal hwnd As Long, ByVal wMsg As Long, ByVal wParam As Long, lParam As Long) As Long
-Public Declare Function SendMessageByRef Lib "user32" Alias "SendMessageA" (ByVal hwnd As Long, ByVal wMsg As Long, wParam As Long, lParam As Any) As Long
+Public Declare Function SendMessage Lib "User32" Alias "SendMessageA" (ByVal hwnd As Long, ByVal wMsg As Long, ByVal wParam As Long, lParam As Long) As Long
+Public Declare Function SendMessageByRef Lib "User32" Alias "SendMessageA" (ByVal hwnd As Long, ByVal wMsg As Long, wParam As Long, lParam As Any) As Long
 Public Const EM_GETLINECOUNT = &HBA
 Public Const EM_LINEFROMCHAR = &HC9
 Public Const EM_GETFIRSTVISIBLELINE = &HCE
@@ -134,8 +134,8 @@ Public Const SB_LINEDOWN = 1
 Public Const SB_LINEUP = 0
 Public Const SB_VERT = 1
 Public Const WM_VSCROLL = &H115
-Public Declare Function GetScrollPos Lib "user32" (ByVal hwnd As Long, ByVal nBar As Long) As Long
-Public Declare Function SetScrollPos Lib "user32" (ByVal hwnd As Long, ByVal nBar As Long, ByVal nPos As Long, ByVal bRedraw As Long) As Long
+Public Declare Function GetScrollPos Lib "User32" (ByVal hwnd As Long, ByVal nBar As Long) As Long
+Public Declare Function SetScrollPos Lib "User32" (ByVal hwnd As Long, ByVal nBar As Long, ByVal nPos As Long, ByVal bRedraw As Long) As Long
 
 
 Public Sub funstate(lbl As Label, state As Integer, Optional full As Boolean = False)
@@ -171,16 +171,17 @@ Public Function ReadFromFile(fn As String, Optional size = 0, Optional org As Bo
   ReadFromFile = Trim(ReadFromFile)
 End Function
 
-Public Function ShowDialog(str As String, tf As Form) As String
-  ReSetDialog "Input which line to jump", tf.Left + (tf.Width - frmDialog.Width) \ 2, tf.Top + (tf.Height - frmDialog.Height) \ 2
+Public Function ShowDialog(str As String, tf As Form, Optional txstr$ = "") As String
+  ReSetDialog "Input which line to jump", tf.Left + (tf.Width - frmDialog.Width) \ 2, tf.Top + (tf.Height - frmDialog.Height) \ 2, txstr
   frmDialog.Show vbModal
   ShowDialog = frmDialog.data
 End Function
 
-Public Sub ReSetDialog(str As String, Optional tL& = 0, Optional tT& = 0)
+Public Sub ReSetDialog(str As String, Optional tL& = 0, Optional tT& = 0, Optional tS$ = "")
   ' The form has been initialized before when accessing frmDialog.Width/Height
   frmDialog.Label1.Caption = str
   frmDialog.Move tL, tT
+  frmDialog.Text1.Text = tS
 End Sub
 
 

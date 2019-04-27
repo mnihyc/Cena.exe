@@ -845,7 +845,7 @@ Private Sub doexec(res As type_res)
   Dim phandle&, retval&
   Dim hRead&, hWrite&
   
-  retval = CreatePipe(hRead, hWrite, sa, (FileLen(res.sout) * 2 \ BUFFER_LENGTH + 1) * BUFFER_LENGTH)
+  retval = CreatePipe(hRead, hWrite, sa, (FileLen(res.sout) * 10 \ BUFFER_LENGTH + 1) * BUFFER_LENGTH)
   If retval = 0 Then
     MsgBox "Error: Error: Failed to create a pipe! (CreatePipe() with " & str(GetLastError()) & ")", vbCritical, "FAULT"
     res_id res.id, True

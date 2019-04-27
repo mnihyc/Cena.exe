@@ -677,6 +677,7 @@ Private Sub txt5_LostFocus()
   End If
   Dim s As String
   s = LCase(txt5.Text)
+  s = Replace(s, "{file.in}", "{std}.in")
   s = Replace(s, "{std.in}", "{fn}.in")
   s = Replace(s, "{filename}", "{fn}")
   s = Replace(s, "{fn}", txt1.Text)
@@ -703,6 +704,7 @@ Private Sub txt6_LostFocus()
   End If
   Dim s As String
   s = LCase(txt6.Text)
+  s = Replace(s, "{file.out}", "{std}.out")
   s = Replace(s, "{std.out}", "{fn}.out")
   s = Replace(s, "{filename}", "{fn}")
   s = Replace(s, "{fn}", txt1.Text)
