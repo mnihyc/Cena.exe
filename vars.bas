@@ -172,7 +172,7 @@ Public Function ReadFromFile(fn As String, Optional size = 0, Optional org As Bo
 End Function
 
 Public Function ShowDialog(str As String, tf As Form, Optional txstr$ = "") As String
-  ReSetDialog "Input which line to jump", tf.Left + (tf.Width - frmDialog.Width) \ 2, tf.Top + (tf.Height - frmDialog.Height) \ 2, txstr
+  ReSetDialog str, tf.Left + (tf.Width - frmDialog.Width) \ 2, tf.Top + (tf.Height - frmDialog.Height) \ 2, txstr
   frmDialog.Show vbModal
   ShowDialog = frmDialog.data
 End Function

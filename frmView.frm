@@ -55,7 +55,6 @@ Begin VB.Form frmView
       _ExtentX        =   9763
       _ExtentY        =   2355
       _Version        =   393217
-      Enabled         =   -1  'True
       ReadOnly        =   -1  'True
       ScrollBars      =   2
       TextRTF         =   $"frmView.frx":0000
@@ -69,7 +68,6 @@ Begin VB.Form frmView
       _ExtentX        =   9763
       _ExtentY        =   2566
       _Version        =   393217
-      Enabled         =   -1  'True
       ReadOnly        =   -1  'True
       ScrollBars      =   2
       TextRTF         =   $"frmView.frx":009D
@@ -83,7 +81,6 @@ Begin VB.Form frmView
       _ExtentX        =   9763
       _ExtentY        =   2566
       _Version        =   393217
-      Enabled         =   -1  'True
       ReadOnly        =   -1  'True
       ScrollBars      =   2
       TextRTF         =   $"frmView.frx":013A
@@ -342,8 +339,14 @@ Private Sub CommandFind_Click()
   str = ShowDialog("Input which text to find", Me, Text2.SelText)
   If Len(str) = 0 Then: Exit Sub
   Dim i&, pos&
-  For i = SendMessage(Text2.hwnd, EM_LINEFROMCHAR, Text2.SelStart, 0&) + curLine1 - 1 To UBound(s1)
+  Dim sline&: sline = SendMessage(Text2.hwnd, EM_LINEFROMCHAR, Text2.SelStart, 0&) + curLine1 - 1
+  Dim sbyte&: sbyte = 0
+  For i = 1 To sline - 1
+    sbyte = sbyte + Len(s1(i - 1)) + 2
+  Next i
+  For i = sline To UBound(s1)
     pos = InStr(1, s1(i), str)
+    If i = sline Then: pos = InStr(Text2.SelStart - sbyte + 2, s1(i), str)
     If pos > 0 Then
       Dim ss$: ss = DoTextJump(Text2, s1, curLine1, i + 1)
       Text2.SelStart = ss + pos - 1
