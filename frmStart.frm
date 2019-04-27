@@ -10,6 +10,15 @@ Begin VB.Form frmStart
    MaxButton       =   0   'False
    ScaleHeight     =   3975
    ScaleWidth      =   5370
+   Begin VB.CheckBox Check1 
+      Caption         =   "Reuse test-data"
+      Height          =   225
+      Left            =   3600
+      TabIndex        =   24
+      Top             =   3690
+      Value           =   1  'Checked
+      Width           =   1665
+   End
    Begin VB.CommandButton Command1 
       Caption         =   "Start"
       BeginProperty Font 
@@ -24,7 +33,7 @@ Begin VB.Form frmStart
       Height          =   495
       Left            =   1800
       TabIndex        =   21
-      Top             =   3120
+      Top             =   3105
       Width           =   1695
    End
    Begin VB.TextBox txt7 
@@ -93,7 +102,6 @@ Begin VB.Form frmStart
       EndProperty
       Height          =   315
       Left            =   1320
-      MaxLength       =   99
       TabIndex        =   9
       Text            =   "{FileName}\*[0].out"
       Top             =   1320
@@ -111,7 +119,6 @@ Begin VB.Form frmStart
       EndProperty
       Height          =   315
       Left            =   1320
-      MaxLength       =   99
       TabIndex        =   6
       Text            =   "{FileName}\*[0].in"
       Top             =   960
@@ -129,7 +136,6 @@ Begin VB.Form frmStart
       EndProperty
       Height          =   315
       Left            =   1320
-      MaxLength       =   25
       TabIndex        =   3
       Text            =   "{FileName}.exe"
       Top             =   600
@@ -392,7 +398,7 @@ Private Sub UpdateIOFile(s As String, ByRef lbl As Label, ByRef lbln As Label, I
       Next i
     End If
     funstate lbl, True
-    lbln.Caption = Trim(Str(Val(spstr(0))))
+    lbln.Caption = Trim(str(Val(spstr(0))))
     UpdateLblnl
     Exit Sub
   End If
@@ -420,7 +426,7 @@ Private Sub UpdateIOFile(s As String, ByRef lbl As Label, ByRef lbln As Label, I
     End If
     If num > 0 Then
       funstate lbl, True
-      lbln.Caption = Trim(Str(num))
+      lbln.Caption = Trim(str(num))
     Else
       funstate lbl, False
       lbln.Caption = "0"
@@ -479,7 +485,7 @@ Private Sub UpdateIOFile(s As String, ByRef lbl As Label, ByRef lbln As Label, I
     snp = InStr(1, s, "\")
     If snp <= 0 Then: snp = Len(s)
     dp = App.Path & "\" & Left(s, snp)
-    file = Trim(Dir(App.Path & "\" & Mid(s, 1, i - 1) & Trim(Str(p)) & Mid(s, j + 1, Len(s) - j)))
+    file = Trim(Dir(App.Path & "\" & Mid(s, 1, i - 1) & Trim(str(p)) & Mid(s, j + 1, Len(s) - j)))
 recomp:
     If file <> "" Then
       k = k + 1
@@ -527,7 +533,7 @@ recomp:
   Else
     funstate lbl, True
   End If
-  lbln.Caption = Trim(Str(k))
+  lbln.Caption = Trim(str(k))
   UpdateLblnl
 End Sub
 
@@ -569,6 +575,12 @@ Private Sub Form_Unload(Cancel As Integer)
   End
 End Sub
 
+Private Sub txt1_KeyUp(KeyCode As Integer, Shift As Integer)
+  If KeyCode = 13 Then
+    Call Command1_Click
+  End If
+End Sub
+
 Private Sub txt1_LostFocus()
   If txt1.Text = "" Then
     funstate lbl1, False
@@ -590,6 +602,13 @@ Private Sub txt1_LostFocus()
   txt5_LostFocus
   txt6_LostFocus
 End Sub
+
+Private Sub txt2_KeyUp(KeyCode As Integer, Shift As Integer)
+  If KeyCode = 13 Then
+    Call Command1_Click
+  End If
+End Sub
+
 Private Sub txt2_LostFocus()
   Dim s As String
   s = LCase(txt2.Text)
@@ -604,6 +623,13 @@ Private Sub txt2_LostFocus()
     exefile = App.Path & "\" & s
   End If
 End Sub
+
+Private Sub txt3_KeyUp(KeyCode As Integer, Shift As Integer)
+  If KeyCode = 13 Then
+    Call Command1_Click
+  End If
+End Sub
+
 Private Sub txt3_LostFocus()
   lbln1.Caption = "0"
   If txt3.Text = "" Or txt1.Text = "" Then
@@ -617,6 +643,13 @@ Private Sub txt3_LostFocus()
   UpdateIOFile s, lbl3, lbln1, False
   UpdateLblnl
 End Sub
+
+Private Sub txt4_KeyUp(KeyCode As Integer, Shift As Integer)
+  If KeyCode = 13 Then
+    Call Command1_Click
+  End If
+End Sub
+
 Private Sub txt4_LostFocus()
   lbln2.Caption = "0"
   If txt4.Text = "" Or txt1.Text = "" Then
@@ -630,6 +663,13 @@ Private Sub txt4_LostFocus()
   UpdateIOFile s, lbl4, lbln2, True
   UpdateLblnl
 End Sub
+
+Private Sub txt5_KeyUp(KeyCode As Integer, Shift As Integer)
+  If KeyCode = 13 Then
+    Call Command1_Click
+  End If
+End Sub
+
 Private Sub txt5_LostFocus()
  If txt5.Text = "" Or txt1.Text = "" Then
     funstate lbl5, False
@@ -649,6 +689,13 @@ Private Sub txt5_LostFocus()
     If fs.FileExists(infile) Then: Kill infile
   End If
 End Sub
+
+Private Sub txt6_KeyUp(KeyCode As Integer, Shift As Integer)
+  If KeyCode = 13 Then
+    Call Command1_Click
+  End If
+End Sub
+
 Private Sub txt6_LostFocus()
   If txt6.Text = "" Or txt1.Text = "" Then
     funstate lbl6, False
@@ -668,6 +715,13 @@ Private Sub txt6_LostFocus()
     If fs.FileExists(outfile) Then: Kill outfile
   End If
 End Sub
+
+Private Sub txt7_KeyUp(KeyCode As Integer, Shift As Integer)
+  If KeyCode = 13 Then
+    Call Command1_Click
+  End If
+End Sub
+
 Private Sub txt7_LostFocus()
   Dim i As Long
   i = Val(txt7.Text)
@@ -724,7 +778,7 @@ Private Sub Command1_Click()
     Exit Sub
   End If
   If Not okstd Then
-    MsgBox "Use file or std??? which???" & vbCrLf & "Can't start!", vbExclamation + vbOKOnly
+    MsgBox "Use file or std???" & vbCrLf & "Can't start!", vbExclamation + vbOKOnly
     Exit Sub
   End If
   Hide

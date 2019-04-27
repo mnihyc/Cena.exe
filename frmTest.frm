@@ -616,25 +616,6 @@ Dim ylbl_num(6) As String
 Dim stoptest As Boolean
 Private Const BUFFER_LENGTH As Long = 102400
 Dim resenabled(1050) As Boolean
-Private Const SHOW_LENGTH As Long = 10240
-
-Private Sub funstate(lbl As Label, state As Integer, Optional full As Boolean = False)
-  If state = 0 Then
-    lbl.ForeColor = vbRed
-    lbl.Caption = IIf(full, "Wrong Answer", "WA")
-  ElseIf state = 1 Then
-    lbl.ForeColor = vbGreen
-    lbl.Caption = IIf(full, "Accept", "AC")
-  ElseIf state = 2 Then
-    lbl.ForeColor = &HFF00FF
-    lbl.Caption = IIf(full, "Time Limit Excceed", "TLE")
-  ElseIf state = 3 Then
-    lbl.ForeColor = vbRed
-    lbl.Caption = IIf(full, "Runtime Error", "RE")
-  Else
-    lbl.Caption = ""
-  End If
-End Sub
 
 Private Sub cmd_rt_Click(Index As Integer)
   If Val(lbl_num(Index)) > stdinnum Or Val(lbl_num(Index)) <= 0 Then: Exit Sub
@@ -707,6 +688,9 @@ Private Sub Form_Load()
       .out = ""
       .err = ""
       .runningtime = 0
+      .stdreaded = False
+      .sincontent = ""
+      .soutcontent = ""
     End With
   Next i
   Show
@@ -727,20 +711,6 @@ Private Sub Form_QueryUnload(Cancel As Integer, UnloadMode As Integer)
   frmStart.Show
   Unload Me
 End Sub
-
-Private Function ReadFromFile(fn As String, Optional size = 0) As String
-  Dim fln&: fln = size
-  If size = 0 Then: fln = FileLen(fn)
-  Dim hFile&: hFile = FreeFile()
-  Open fn For Binary Access Read As hFile
-  ReadFromFile = Space(fln)
-  DoEvents
-  Get hFile, , ReadFromFile
-  Close hFile
-  ReadFromFile = Replace(ReadFromFile, vbCr, "")
-  ReadFromFile = Replace(ReadFromFile, vbLf, vbCrLf)
-  ReadFromFile = Trim(ReadFromFile)
-End Function
 
 Private Function ReadOutput(hRead As Long) As String
   Dim fs As Object
@@ -807,11 +777,18 @@ Private Sub doexec(res As type_res)
       .out = ""
       .err = ""
       .runningtime = 0
+      .judging = -1
     End With
-  If Not fs.FileExists(res.sin) Or Not fs.FileExists(res.sout) Or Not fs.FileExists(exefile) Then
-    MsgBox "Don't move files!" & vbCrLf & res.sin & vbCrLf & res.sout & vbCrLf & exefile, vbCritical, "Error"
-    res_id res.id, True
-    GoTo endsub
+
+  If Not res.stdreaded Then
+    If Not fs.FileExists(res.sin) Or Not fs.FileExists(res.sout) Or Not fs.FileExists(exefile) Then
+      MsgBox "Can't find stdin/stdout/exe files!" & vbCrLf & res.sin & vbCrLf & res.sout & vbCrLf & exefile, vbCritical, "Error"
+      res_id res.id, True
+      GoTo endsub
+    End If
+    res.sincontent = ReadFromFile(res.sin, , True)
+    res.soutcontent = ReadFromFile(res.sout)
+    res.stdreaded = True
   End If
   
   Dim pstdin&, pstdinread&, pstdinwrite&
@@ -825,34 +802,37 @@ Private Sub doexec(res As type_res)
   If Trim(UCase(infile)) <> "{STDIN}" Then
     FileCopy res.sin, infile
     If Not fs.FileExists(infile) Then
-      MsgBox "Error at copying the input file!", vbCritical, "Error"
+      MsgBox "Error when copying the input file!", vbCritical, "Error"
       res_id res.id, True
       GoTo endsub
     End If
   Else
-    pstdin = CreateFile(res.sin, GENERIC_READ, FILE_SHARE_READ Or FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0)
-    If pstdin = INVALID_HANDLE_VALUE Or pstdin = 0 Then
-      MsgBox "Error: FAILED to OPEN STD-IN ! (CreateFile with " & Str(GetLastError()) & ")", vbCritical, "FAULT"
-      res_id res.id, True
-      GoTo endsub
-    End If
-    Dim nSize&: nSize = GetFileSize(pstdin, 0)
-    SetFilePointer pstdin, 0, 0, FILE_BEGIN
+    'pstdin = CreateFile(res.sin, GENERIC_READ, FILE_SHARE_READ Or FILE_SHARE_WRITE, 0, OPEN_EXISTING, 0, 0)
+    'If pstdin = INVALID_HANDLE_VALUE Or pstdin = 0 Then
+    '  MsgBox "Error: FAILED to OPEN STD-IN ! (CreateFile with " & Str(GetLastError()) & ")", vbCritical, "FAULT"
+    '  res_id res.id, True
+    '  GoTo endsub
+    'End If
+    'Dim nSize&: nSize = GetFileSize(pstdin, 0)
+    'SetFilePointer pstdin, 0, 0, FILE_BEGIN
+    Dim bBytes() As Byte, nSize&
+    bBytes = StrConv(res.sincontent, vbFromUnicode)
+    nSize = UBound(bBytes) + 1
+    
     Dim dwRet&, dwRet1&
     dwRet = CreatePipe(pstdinread, pstdinwrite, sa, (nSize \ BUFFER_LENGTH + 1) * BUFFER_LENGTH)
     If dwRet = 0 Then
-      MsgBox "Error: FAILED to CREATE a PIPE ! (CreatePipe with " & Str(GetLastError()) & ")", vbCritical, "FAULT"
+      MsgBox "Error: Failed to create a pipe! (CreatePipe() with " & str(GetLastError()) & ")", vbCritical, "FAULT"
       res_id res.id, True
       GoTo endsub
     End If
-    Dim bBytes(0 To (BUFFER_LENGTH)) As Byte
-    Do
-      Erase bBytes
-      ReadFile pstdin, bBytes(0), BUFFER_LENGTH, dwRet, ByVal 0&
-      WriteFile pstdinwrite, bBytes(0), BUFFER_LENGTH, dwRet1, ByVal 0&
-      DoEvents
-    Loop Until (dwRet <> BUFFER_LENGTH)
-    CloseHandle pstdin
+    'Do
+      'ReadFile pstdin, bBytes(0), BUFFER_LENGTH, dwRet, ByVal 0&
+      'WriteFile pstdinwrite, bBytes(0), BUFFER_LENGTH, dwRet1, ByVal 0&
+      'DoEvents
+    'Loop Until (dwRet <> BUFFER_LENGTH)
+    'CloseHandle pstdin
+    WriteFile pstdinwrite, bBytes(0), nSize, dwRet1, ByVal 0&
     CloseHandle pstdinwrite
     With si
       .dwFlags = .dwFlags Or STARTF_USESTDHANDLES
@@ -867,7 +847,7 @@ Private Sub doexec(res As type_res)
   
   retval = CreatePipe(hRead, hWrite, sa, (FileLen(res.sout) * 2 \ BUFFER_LENGTH + 1) * BUFFER_LENGTH)
   If retval = 0 Then
-    MsgBox "Error: FAILED to CREATE a PIPE ! (CreatePipe with " & Str(GetLastError()) & ")", vbCritical, "FAULT"
+    MsgBox "Error: Error: Failed to create a pipe! (CreatePipe() with " & str(GetLastError()) & ")", vbCritical, "FAULT"
     res_id res.id, True
     GoTo endsub
   End If
@@ -879,11 +859,12 @@ Private Sub doexec(res As type_res)
     .hStdOutput = hWrite
   End With
   
+  res.judging = 1
   Sleep 100
   retval = CreateProcess(vbNullString, exefile & vbNullChar, sa, sa, 1&, NORMAL_PRIORITY_CLASS, ByVal 0&, App.Path & vbNullString, si, pi)
   phandle = pi.hProcess
   If retval = 0 Or phandle = 0 Or phandle = INVALID_HANDLE_VALUE Then
-    MsgBox "Error: FAILED to CREATE a PROCESS ! (CreateProcess with " & Str(GetLastError()) & ")", vbCritical, "FAULT"
+    MsgBox "Error: Failed to create a process! (CreateProcess() with " & str(GetLastError()) & ")", vbCritical, "FAULT"
     res_id res.id, True
     GoTo endsub
   End If
@@ -896,7 +877,7 @@ Private Sub doexec(res As type_res)
     Sleep 10
     retval = GetExitCodeProcess(phandle, ec)
     If retval = 0 Then
-      MsgBox "Error: FAILED to GETEXITCODEPROCESS ! (GetExitCodeProcess with " & Str(GetLastError()) & ")", vbCritical, "FAULT"
+      MsgBox "Error: Failed to call GetExitCodeProcess() ! (GetExitCodeProcess() with " & str(GetLastError()) & ")", vbCritical, "FAULT"
       res_id res.id, True
       GoTo endsub
     End If
@@ -905,11 +886,13 @@ Private Sub doexec(res As type_res)
       'res.state = True
       res.runningtime = timeGetTime - Savetime
       If hWrite Then: CloseHandle hWrite
+      res.judging = 2
+      DoEvents
       sstr = ReadOutput(hRead)
       If ec <> 0 Then
         res.rw = 3
         res.out = sstr
-        res.err = "Rutime Error: returned  " & Trim(Str(ec))
+        res.err = "The program returned  " & Trim(str(ec))
         res_id res.id, True
         res.state = True
         GoTo endsub
@@ -929,7 +912,9 @@ Private Sub doexec(res As type_res)
         res.state = True
         GoTo endsub
       End If
-      str1 = ReadFromFile(res.sout)
+      str1 = res.soutcontent
+      res.judging = 3
+      DoEvents
       If Not StrCompare(sstr, str1) Then
         res.rw = 0
         res.out = sstr
@@ -957,11 +942,19 @@ Private Sub doexec(res As type_res)
   res.rw = 2
   res.err = "Time Limit Excceed"
   If hWrite Then: CloseHandle hWrite
+  res.judging = 2
+  DoEvents
   res.out = ReadOutput(hRead)
   res_id res.id, True
   res.state = True
   
 endsub:
+  If frmStart.Check1.Value = 0 Then
+    res.sincontent = ""
+    res.soutcontent = ""
+    res.stdreaded = False
+  End If
+  res.judging = 0
   CloseHandle phandle
   If pstdin Then: CloseHandle pstdin
   If hRead Then: CloseHandle hRead
@@ -978,7 +971,17 @@ Private Sub print_res(lbl As Label, lbl_txt As Label, lbl_rs As Label, cmd_rt As
     Exit Sub
   End If
   If res(p).state = False Then
-    lbl_txt.Caption = "Waiting ..."
+    If res(p).judging = -1 Then
+      lbl_txt.Caption = "Preparing.."
+    ElseIf res(p).judging = 1 Then
+      lbl_txt.Caption = "Running ..."
+     ElseIf res(p).judging = 2 Then
+      lbl_txt.Caption = "Reading ..."
+    ElseIf res(p).judging = 3 Then
+      lbl_txt.Caption = "Comparing.."
+    Else
+      lbl_txt.Caption = "Waiting ..."
+    End If
     funstate lbl_rs, -1
     'cmd_rt.Enabled = False
     Exit Sub
@@ -992,42 +995,11 @@ End Sub
 
 
 Private Sub lbl_rs_Click(Index As Integer)
+With frmView
   If res(Val(lbl_num(Index).Caption)).state = False Then: Exit Sub
-  Dim strLine As String, sstr As String, str1 As String
-  sstr = ReadFromFile(res(Val(lbl_num(Index).Caption)).sout, SHOW_LENGTH)
-  str1 = ReadFromFile(res(Val(lbl_num(Index).Caption)).sin, SHOW_LENGTH)
-  frmView.Show
-  funstate frmView.Label1, res(Val(lbl_num(Index))).rw, True
-  Dim leng&
-  leng = FileLen(res(Val(lbl_num(Index).Caption)).sin)
-  If leng > SHOW_LENGTH Then
-    frmView.Text1.Text = Left(str1, SHOW_LENGTH)
-    frmView.Text1.Text = frmView.Text1.Text & "<skip around " & Str(leng - SHOW_LENGTH) & "bytes>"
-  Else
-    frmView.Text1.Text = str1
-  End If
-  
-  leng = Len(res(Val(lbl_num(Index))).out)
-  If leng > SHOW_LENGTH Then
-    frmView.Text2.Text = Left(res(Val(lbl_num(Index))).out, SHOW_LENGTH)
-    frmView.Text2.Text = frmView.Text2.Text & "<skip around " & Str(leng - SHOW_LENGTH) & "bytes>"
-  Else
-    frmView.Text2.Text = res(Val(lbl_num(Index))).out
-  End If
-  
-  leng = FileLen(res(Val(lbl_num(Index).Caption)).sout)
-  If leng > SHOW_LENGTH Then
-    frmView.Text3.Text = Left(sstr, SHOW_LENGTH)
-    frmView.Text3.Text = frmView.Text3.Text & "<skip around " & Str(leng - SHOW_LENGTH) & "bytes>"
-  Else
-    frmView.Text3.Text = sstr
-  End If
-  frmView.Label5.Caption = res(Val(lbl_num(Index))).err
-  frmView.Label6.Caption = Right(res(Val(lbl_num(Index))).sin, Len(res(Val(lbl_num(Index))).sin) - InStrRev(res(Val(lbl_num(Index))).sin, "\"))
-  frmView.Label7.Caption = Right(res(Val(lbl_num(Index))).sout, Len(res(Val(lbl_num(Index))).sout) - InStrRev(res(Val(lbl_num(Index))).sout, "\"))
-  frmView.Label9.Caption = Format(res(Val(lbl_num(Index))).runningtime, "###,###") & "ms"
-  frmView.Refresh
-  frmView.SetFocus
+  Call .SetRes(res(Val(lbl_num(Index))))
+  Call .ReSet
+End With
 End Sub
 
 Private Sub Timer2_Timer()

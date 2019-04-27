@@ -6,13 +6,18 @@ Public stdout(1 To 1050) As String, stdoutnum As Integer
 Public Type type_res
   id As Integer
   state As Boolean
+  judging As Integer
   rw As Integer
   sin As String
   sout As String
   out As String
   err As String
   runningtime As Integer
+  stdreaded As Boolean
+  sincontent As String
+  soutcontent As String
 End Type
+
 Public Declare Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
 Public Declare Function timeGetTime Lib "winmm.dll" () As Long
 Public Declare Function GetExitCodeProcess Lib "kernel32" (ByVal hProcess As Long, lpExitCode As Long) As Long
@@ -117,9 +122,66 @@ End Enum
   
 Public Const INVALID_HANDLE_VALUE = -1
 
+Public Declare Function SendMessage Lib "user32" Alias "SendMessageA" (ByVal hwnd As Long, ByVal wMsg As Long, ByVal wParam As Long, lParam As Long) As Long
+Public Declare Function SendMessageByRef Lib "user32" Alias "SendMessageA" (ByVal hwnd As Long, ByVal wMsg As Long, wParam As Long, lParam As Any) As Long
+Public Const EM_GETLINECOUNT = &HBA
+Public Const EM_LINEFROMCHAR = &HC9
+Public Const EM_GETFIRSTVISIBLELINE = &HCE
+Public Const EM_LINEINDEX = &HBB
+Public Const EM_LINELENGTH = &HC1
+Public Const EM_SETSEL = &HB1
+Public Const SB_LINEDOWN = 1
+Public Const SB_LINEUP = 0
+Public Const SB_VERT = 1
+Public Const WM_VSCROLL = &H115
+Public Declare Function GetScrollPos Lib "user32" (ByVal hwnd As Long, ByVal nBar As Long) As Long
+Public Declare Function SetScrollPos Lib "user32" (ByVal hwnd As Long, ByVal nBar As Long, ByVal nPos As Long, ByVal bRedraw As Long) As Long
 
 
+Public Sub funstate(lbl As Label, state As Integer, Optional full As Boolean = False)
+  If state = 0 Then
+    lbl.ForeColor = vbRed
+    lbl.Caption = IIf(full, "Wrong Answer", "WA")
+  ElseIf state = 1 Then
+    lbl.ForeColor = vbGreen
+    lbl.Caption = IIf(full, "Accept", "AC")
+  ElseIf state = 2 Then
+    lbl.ForeColor = &HFF00FF
+    lbl.Caption = IIf(full, "Time Limit Excceed", "TLE")
+  ElseIf state = 3 Then
+    lbl.ForeColor = vbRed
+    lbl.Caption = IIf(full, "Runtime Error", "RE")
+  Else
+    lbl.Caption = ""
+  End If
+End Sub
 
+Public Function ReadFromFile(fn As String, Optional size = 0, Optional org As Boolean = False) As String
+  Dim fln&: fln = size
+  If size = 0 Then: fln = FileLen(fn)
+  Dim hFile&: hFile = FreeFile()
+  Open fn For Binary Access Read As hFile
+  ReadFromFile = Space(fln)
+  DoEvents
+  Get hFile, , ReadFromFile
+  Close hFile
+  If org Then: Exit Function
+  ReadFromFile = Replace(ReadFromFile, vbCr, "")
+  ReadFromFile = Replace(ReadFromFile, vbLf, vbCrLf)
+  ReadFromFile = Trim(ReadFromFile)
+End Function
+
+Public Function ShowDialog(str As String, tf As Form) As String
+  ReSetDialog "Input which line to jump", tf.Left + (tf.Width - frmDialog.Width) \ 2, tf.Top + (tf.Height - frmDialog.Height) \ 2
+  frmDialog.Show vbModal
+  ShowDialog = frmDialog.data
+End Function
+
+Public Sub ReSetDialog(str As String, Optional tL& = 0, Optional tT& = 0)
+  ' The form has been initialized before when accessing frmDialog.Width/Height
+  frmDialog.Label1.Caption = str
+  frmDialog.Move tL, tT
+End Sub
 
 
 
