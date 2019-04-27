@@ -201,7 +201,7 @@ Private res As type_res
 Private Const SHOW_LENGTH As Long = 20480
 Private Const LINE_DIFF As Long = 200
 Dim s1() As String, s2() As String
-Dim curLine1&, curLine2&
+Dim curLine1&, curLine2&, preSize1&, preSize2&
 
 Friend Sub SetRes(tres As type_res)
   res = tres
@@ -215,7 +215,7 @@ End Sub
 
 Public Sub ReSet()
 With Me
-  Dim strLine As String, sstr As String, str1 As String
+  Dim strLine As String, sstr As String, str1 As String, tstr As String
   sstr = Left(res.soutcontent, SHOW_LENGTH)
   str1 = Left(res.sincontent, SHOW_LENGTH)
   If .Visible = False And .FormOldWidth > 0 And .FormOldHeight > 0 Then
@@ -228,7 +228,8 @@ With Me
   leng = IIf(res.stdreaded = True, Len(res.sincontent), FileLen(res.sin))
   If leng > SHOW_LENGTH Then
     .Text1.Text = Left(str1, SHOW_LENGTH)
-    .Text1.Text = .Text1.Text & "<skip around " & Trim(Format(leng - SHOW_LENGTH, "###,###")) & "bytes>"
+    tstr = "<skip around " & Trim(Format(leng - SHOW_LENGTH, "###,###")) & "bytes>"
+    .Text1.Text = .Text1.Text & tstr
   Else
     .Text1.Text = str1
   End If
@@ -236,7 +237,8 @@ With Me
   leng = Len(res.out)
   If leng > SHOW_LENGTH Then
     .Text2.Text = Left(res.out, SHOW_LENGTH)
-    .Text2.Text = .Text2.Text & "<skip around " & Trim(Format(leng - SHOW_LENGTH, "###,###")) & "bytes>"
+    tstr = "<skip around " & Trim(Format(leng - SHOW_LENGTH, "###,###")) & "bytes>"
+    .Text2.Text = .Text2.Text & tstr
   Else
     .Text2.Text = res.out
   End If
@@ -244,7 +246,8 @@ With Me
   leng = Len(res.soutcontent)
   If leng > SHOW_LENGTH Then
     .Text3.Text = Left(sstr, SHOW_LENGTH)
-    .Text3.Text = .Text3.Text & "<skip around " & Trim(Format(leng - SHOW_LENGTH, "###,###")) & "bytes>"
+    tstr = "<skip around " & Trim(Format(leng - SHOW_LENGTH, "###,###")) & "bytes>"
+    .Text3.Text = .Text3.Text & tstr
   Else
     .Text3.Text = sstr
   End If
@@ -253,6 +256,7 @@ With Me
   .Label7.Caption = Right(res.sout, Len(res.sout) - InStrRev(res.sout, "\"))
   .Label9.Caption = Format(res.runningtime, "###,###") & "ms"
   curLine1 = 1: curLine2 = 1
+  preSize1 = 0: preSize2 = 0
   .Text1.SelStart = 0: .Text1.SelLength = 0: .Text1.Refresh
   .Text2.SelStart = 0: .Text2.SelLength = 0: .Text2.Refresh
   .Text3.SelStart = 0: .Text3.SelLength = 0: .Text3.Refresh
@@ -267,11 +271,11 @@ End With
 End Sub
 
 ' Use ByRef to prevent unnecessary waste of time
-Private Function DoTextJump(Text As RichTextBox, ByRef sarr() As String, ByRef curLine&, Optional line& = 1) As Long
+Private Function DoTextJump(Text As RichTextBox, ByRef sarr() As String, ByRef curLine&, ByRef preSize&, Optional line& = 1) As Long
   Dim i&, leng&: leng = UBound(sarr) + 1
   If line <= 0 Then: line = 0
   If line > leng Then: line = leng
-  Dim str$: str = ""
+  Dim str$, tstr$: str = ""
   Dim sline&, eline&
   sline = IIf(line - LINE_DIFF >= 1, line - LINE_DIFF, 1)
   curLine = sline
@@ -284,7 +288,11 @@ Private Function DoTextJump(Text As RichTextBox, ByRef sarr() As String, ByRef c
       sbyte = sbyte + Len(sarr(i - 1)) + 2
     Next i
     sbyte = sbyte - 2
-    Text.Text = Text.Text & "<skip around " & Trim(Format(sbyte, "###,###")) & "bytes>"
+    tstr = "<skip around " & Trim(Format(sbyte, "###,###")) & "bytes>"
+    preSize = Len(tstr)
+    Text.Text = Text.Text & tstr
+  Else
+    preSize = 0
   End If
   
   Dim ss&
@@ -299,7 +307,8 @@ Private Function DoTextJump(Text As RichTextBox, ByRef sarr() As String, ByRef c
       sbyte = sbyte + Len(sarr(i - 1)) + 2
     Next i
     sbyte = sbyte - 2
-    Text.Text = Text.Text & "<skip around " & Trim(Format(sbyte, "###,###")) & "bytes>"
+    tstr = "<skip around " & Trim(Format(sbyte, "###,###")) & "bytes>"
+    Text.Text = Text.Text & tstr
   End If
   Text.SelStart = Len(Text.Text): Text.SelLength = 0
   
@@ -311,8 +320,13 @@ Private Function DoTextJump(Text As RichTextBox, ByRef sarr() As String, ByRef c
 End Function
 
 Private Sub CommandDiff_Click()
-  Dim i&, ss1$, ss2$
-  i = SendMessage(Text2.hwnd, EM_LINEFROMCHAR, Text2.SelStart, 0&) + curLine1 - 1
+  Dim i&, ss1$, ss2$, k&, leng&
+  Dim sline&: sline = SendMessage(Text2.hwnd, EM_LINEFROMCHAR, Text2.SelStart, 0&) + curLine1 - 1
+  Dim sbyte&: sbyte = preSize1
+  For i = curLine1 - 1 To sline - 1
+    sbyte = sbyte + Len(s1(i)) + 2
+  Next i
+  i = sline
   Do While i <= UBound(s1) Or i <= UBound(s2)
     If i > UBound(s1) Then
       ss1 = ""
@@ -324,11 +338,32 @@ Private Sub CommandDiff_Click()
     Else
       ss2 = s2(i)
     End If
-    If Trim(ss1) <> Trim(ss2) Then
-      Call DoTextJump(Text2, s1, curLine1, i + 1)
-      Call DoTextJump(Text3, s2, curLine2, i + 1)
+    ss1 = Trim(ss1): ss2 = Trim(ss2)
+    If i = sline Then
+      k = Text2.SelStart - sbyte + 1 + 1
+      If k <= Len(ss1) And k <= Len(ss2) Then
+        ss1 = Mid(ss1, k)
+        ss2 = Mid(ss2, k)
+      Else
+        ss1 = ""
+        ss2 = ""
+      End If
+    End If
+    If ss1 <> ss2 Then
+      Dim ss&: ss = DoTextJump(Text2, s1, curLine1, preSize1, i + 1)
+      Dim ss3&: ss3 = DoTextJump(Text3, s2, curLine2, preSize2, i + 1)
+      leng = Len(ss1)
+      If Len(ss2) < leng Then: leng = Len(ss2)
+      For k = 1 To leng
+        If Mid(ss1, k, 1) <> Mid(ss2, k, 1) Then
+          Exit For
+        End If
+      Next k
+      Text2.SelStart = ss + k - 1: Text2.SelLength = 0
+      Text3.SelStart = ss3 + k - 1: Text3.SelLength = 0
       Exit Do
     End If
+    If i <= UBound(s1) Then: sbyte = sbyte + Len(s1(i)) + 2
     i = i + 1
   Loop
   Text2.SetFocus
@@ -340,19 +375,20 @@ Private Sub CommandFind_Click()
   If Len(str) = 0 Then: Exit Sub
   Dim i&, pos&
   Dim sline&: sline = SendMessage(Text2.hwnd, EM_LINEFROMCHAR, Text2.SelStart, 0&) + curLine1 - 1
-  Dim sbyte&: sbyte = 0
-  For i = 1 To sline - 1
-    sbyte = sbyte + Len(s1(i - 1)) + 2
+  Dim sbyte&: sbyte = preSize1
+  For i = curLine1 - 1 To sline - 1
+    sbyte = sbyte + Len(s1(i)) + 2
   Next i
   For i = sline To UBound(s1)
     pos = InStr(1, s1(i), str)
-    If i = sline Then: pos = InStr(Text2.SelStart - sbyte + 2, s1(i), str)
+    If i = sline Then: pos = InStr(Text2.SelStart - sbyte + 1 + IIf(Text2.SelLength > 0, 1, 0), s1(i), str)
     If pos > 0 Then
-      Dim ss$: ss = DoTextJump(Text2, s1, curLine1, i + 1)
+      Dim ss$: ss = DoTextJump(Text2, s1, curLine1, preSize1, i + 1)
       Text2.SelStart = ss + pos - 1
       Text2.SelLength = Len(str)
       Exit For
     End If
+    sbyte = sbyte + Len(s1(i)) + 2
   Next i
   Text2.SetFocus
 End Sub
@@ -368,9 +404,9 @@ Private Sub CommandJump_Click(Index As Integer)
   Dim line&
   line = Val(ShowDialog("Input which line to jump", Me))
   If Index = 0 Then
-    Call DoTextJump(Text, s1, curLine1, line)
+    Call DoTextJump(Text, s1, curLine1, preSize1, line)
   Else
-    Call DoTextJump(Text, s2, curLine2, line)
+    Call DoTextJump(Text, s2, curLine2, preSize2, line)
   End If
   
   Text.SetFocus
