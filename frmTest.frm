@@ -618,12 +618,14 @@ Private Const BUFFER_LENGTH As Long = 102400
 Dim resenabled(1050) As Boolean
 
 Private Sub cmd_rt_Click(Index As Integer)
+  vs1.SetFocus
   If Val(lbl_num(Index)) > stdinnum Or Val(lbl_num(Index)) <= 0 Then: Exit Sub
   res_id Val(lbl_num(Index)), False
   res(Val(lbl_num(Index))).state = False
   ylbl_num(Index) = ""
   Call doexec(res(Val(lbl_num(Index))))
   res_id Val(lbl_num(Index)), True
+  cmd_rt(Index).SetFocus
 End Sub
 
 Public Sub cmd_rta_Click()
@@ -691,6 +693,8 @@ Private Sub Form_Load()
       .stdreaded = False
       .sincontent = ""
       .soutcontent = ""
+      .soutline = 0
+      .outline = 0
     End With
   Next i
   Show
@@ -712,14 +716,14 @@ Private Sub Form_QueryUnload(Cancel As Integer, UnloadMode As Integer)
   Unload Me
 End Sub
 
-Private Function ReadOutput(hRead As Long) As String
+Private Function ReadOutput(hRead As Long, ByRef lines As Long) As String
   Dim fs As Object
   Set fs = CreateObject("Scripting.FileSystemObject")
   Dim strLine$, sstr$, lgSize&, ssstr$, ltst&
   Dim sBuffer(0 To (BUFFER_LENGTH)) As Byte
   If Trim(UCase(outfile)) <> "{STDOUT}" Then
     If fs.FileExists(outfile) Then
-     sstr = ReadFromFile(outfile)
+     sstr = ReadFromFileLine(outfile, lines)
     End If
   Else
     Do While ReadFile(hRead, sBuffer(0), BUFFER_LENGTH, lgSize, ByVal 0&)
@@ -732,8 +736,12 @@ Private Function ReadOutput(hRead As Long) As String
       If Len(ssstr) <> BUFFER_LENGTH Then: Exit Do
       DoEvents
     Loop
+    Dim len2&, len3&
     sstr = Replace(sstr, vbCr, "")
+    len2 = Len(sstr)
     sstr = Replace(sstr, vbLf, vbCrLf)
+    len3 = Len(sstr)
+    lines = len3 - len2
   End If
   ReadOutput = Trim(sstr)
 End Function
@@ -787,7 +795,7 @@ Private Sub doexec(res As type_res)
       GoTo endsub
     End If
     res.sincontent = ReadFromFile(res.sin, , True)
-    res.soutcontent = ReadFromFile(res.sout)
+    res.soutcontent = ReadFromFileLine(res.sout, res.soutline)
     res.stdreaded = True
   End If
   
@@ -845,7 +853,10 @@ Private Sub doexec(res As type_res)
   Dim phandle&, retval&
   Dim hRead&, hWrite&
   
-  retval = CreatePipe(hRead, hWrite, sa, (FileLen(res.sout) * 10 \ BUFFER_LENGTH + 1) * BUFFER_LENGTH)
+  retval = CreatePipe(hRead, hWrite, sa, (134217728 \ BUFFER_LENGTH + 1) * BUFFER_LENGTH)
+  If retval = 0 Then
+    retval = CreatePipe(hRead, hWrite, sa, (FileLen(res.sout) * 2 \ BUFFER_LENGTH + 1) * BUFFER_LENGTH)
+  End If
   If retval = 0 Then
     MsgBox "Error: Error: Failed to create a pipe! (CreatePipe() with " & str(GetLastError()) & ")", vbCritical, "FAULT"
     res_id res.id, True
@@ -888,7 +899,7 @@ Private Sub doexec(res As type_res)
       If hWrite Then: CloseHandle hWrite
       res.judging = 2
       DoEvents
-      sstr = ReadOutput(hRead)
+      sstr = ReadOutput(hRead, res.outline)
       If ec <> 0 Then
         res.rw = 3
         res.out = sstr
@@ -944,7 +955,7 @@ Private Sub doexec(res As type_res)
   If hWrite Then: CloseHandle hWrite
   res.judging = 2
   DoEvents
-  res.out = ReadOutput(hRead)
+  res.out = ReadOutput(hRead, res.outline)
   res_id res.id, True
   res.state = True
   

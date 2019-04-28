@@ -16,6 +16,8 @@ Public Type type_res
   stdreaded As Boolean
   sincontent As String
   soutcontent As String
+  soutline As Long
+  outline As Long
 End Type
 
 Public Declare Sub Sleep Lib "kernel32" (ByVal dwMilliseconds As Long)
@@ -166,9 +168,26 @@ Public Function ReadFromFile(fn As String, Optional size = 0, Optional org As Bo
   Get hFile, , ReadFromFile
   Close hFile
   If org Then: Exit Function
+  ReadFromFile = Trim(ReadFromFile)
   ReadFromFile = Replace(ReadFromFile, vbCr, "")
   ReadFromFile = Replace(ReadFromFile, vbLf, vbCrLf)
-  ReadFromFile = Trim(ReadFromFile)
+End Function
+
+Public Function ReadFromFileLine(fn As String, ByRef lines As Long) As String
+  Dim fln&: fln = FileLen(fn)
+  Dim hFile&: hFile = FreeFile()
+  Open fn For Binary Access Read As hFile
+  ReadFromFileLine = Space(fln)
+  DoEvents
+  Get hFile, , ReadFromFileLine
+  Close hFile
+  ReadFromFileLine = Trim(ReadFromFileLine)
+  Dim len2&, len3&
+  ReadFromFileLine = Replace(ReadFromFileLine, vbCr, "")
+  len2 = Len(ReadFromFileLine)
+  ReadFromFileLine = Replace(ReadFromFileLine, vbLf, vbCrLf)
+  len3 = Len(ReadFromFileLine)
+  lines = len3 - len2
 End Function
 
 Public Function ShowDialog(str As String, tf As Form, Optional txstr$ = "") As String

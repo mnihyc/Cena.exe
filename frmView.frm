@@ -229,14 +229,16 @@ Friend Sub SetRes(tres As type_res)
   res = tres
   's1 = Split(res.out, vbCrLf)
   sbufed1 = False
-  ReDim s1(GetLength(res.out)) As String
+  'ReDim s1(GetLength(res.out)) As String
+  ReDim s1(res.outline) As String
   If res.stdreaded = False Then
     res.sincontent = ReadFromFile(res.sin, SHOW_LENGTH, True)
     res.soutcontent = ReadFromFile(res.sout)
   End If
   's2 = Split(res.soutcontent, vbCrLf)
   sbufed2 = False
-  ReDim s2(GetLength(res.soutcontent)) As String
+  'ReDim s2(GetLength(res.soutcontent)) As String
+  ReDim s2(res.soutline) As String
 End Sub
 
 Public Sub ReSet()
