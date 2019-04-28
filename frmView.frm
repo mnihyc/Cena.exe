@@ -55,6 +55,7 @@ Begin VB.Form frmView
       _ExtentX        =   9763
       _ExtentY        =   2355
       _Version        =   393217
+      HideSelection   =   0   'False
       ReadOnly        =   -1  'True
       ScrollBars      =   2
       TextRTF         =   $"frmView.frx":0000
@@ -68,6 +69,7 @@ Begin VB.Form frmView
       _ExtentX        =   9763
       _ExtentY        =   2566
       _Version        =   393217
+      HideSelection   =   0   'False
       ReadOnly        =   -1  'True
       ScrollBars      =   2
       TextRTF         =   $"frmView.frx":009D
@@ -81,6 +83,7 @@ Begin VB.Form frmView
       _ExtentX        =   9763
       _ExtentY        =   2566
       _Version        =   393217
+      HideSelection   =   0   'False
       ReadOnly        =   -1  'True
       ScrollBars      =   2
       TextRTF         =   $"frmView.frx":013A
@@ -200,17 +203,40 @@ Public FormOldHeight As Long
 Private res As type_res
 Private Const SHOW_LENGTH As Long = 20480
 Private Const LINE_DIFF As Long = 200
+Dim sbufed1 As Boolean, sbufed2 As Boolean
 Dim s1() As String, s2() As String
 Dim curLine1&, curLine2&, preSize1&, preSize2&
 
+Private Sub BufStr(ByRef s As String, ByRef sa() As String, ByRef sbufed As Boolean)
+  If sbufed = False Then
+    sbufed = True
+    sa = Split(s, vbCrLf)
+    If res.stdreaded = False Then: s = ""
+  End If
+End Sub
+
+Private Function GetLength(ByRef s As String)
+  GetLength = 0
+  Dim i&, leng&: leng = Len(s)
+  For i = 1 To leng Step 2
+    If Mid(s, i, 1) = vbLf Or Mid(s, i, 1) = vbCr Then
+      GetLength = GetLength + 1
+    End If
+  Next i
+End Function
+
 Friend Sub SetRes(tres As type_res)
   res = tres
-  s1 = Split(res.out, vbCrLf)
+  's1 = Split(res.out, vbCrLf)
+  sbufed1 = False
+  ReDim s1(GetLength(res.out)) As String
   If res.stdreaded = False Then
     res.sincontent = ReadFromFile(res.sin, SHOW_LENGTH, True)
     res.soutcontent = ReadFromFile(res.sout)
   End If
-  s2 = Split(res.soutcontent, vbCrLf)
+  's2 = Split(res.soutcontent, vbCrLf)
+  sbufed2 = False
+  ReDim s2(GetLength(res.soutcontent)) As String
 End Sub
 
 Public Sub ReSet()
@@ -266,7 +292,7 @@ With Me
 End With
   If res.stdreaded = False Then
     res.sincontent = ""
-    res.soutcontent = ""
+    'res.soutcontent = ""
   End If
 End Sub
 
@@ -320,38 +346,53 @@ Private Function DoTextJump(Text As RichTextBox, ByRef sarr() As String, ByRef c
 End Function
 
 Private Sub CommandDiff_Click()
-  Dim i&, ss1$, ss2$, k&, leng&
+  BufStr res.out, s1, sbufed1
+  BufStr res.soutcontent, s2, sbufed2
+  Dim i&, j&, ss1$, ss2$, k&, k1&, k2&, leng&
   Dim sline&: sline = SendMessage(Text2.hwnd, EM_LINEFROMCHAR, Text2.SelStart, 0&) + curLine1 - 1
-  Dim sbyte&: sbyte = preSize1
+  Dim sline2&: sline2 = SendMessage(Text3.hwnd, EM_LINEFROMCHAR, Text3.SelStart, 0&) + curLine2 - 1
+  Dim sbyte&, sbyte2&: sbyte = preSize1: sbyte2 = preSize2
   For i = curLine1 - 1 To sline - 1
     sbyte = sbyte + Len(s1(i)) + 2
   Next i
-  i = sline
-  Do While i <= UBound(s1) Or i <= UBound(s2)
+  For i = curLine2 - 1 To sline2 - 1
+    sbyte2 = sbyte2 + Len(s2(i)) + 2
+  Next i
+  i = sline: j = sline2
+  Do While i <= UBound(s1) Or j <= UBound(s2)
     If i > UBound(s1) Then
       ss1 = ""
     Else
       ss1 = s1(i)
     End If
-    If i > UBound(s2) Then
+    If j > UBound(s2) Then
       ss2 = ""
     Else
-      ss2 = s2(i)
+      ss2 = s2(j)
     End If
     ss1 = Trim(ss1): ss2 = Trim(ss2)
-    If i = sline Then
-      k = Text2.SelStart - sbyte + 1 + 1
-      If k <= Len(ss1) And k <= Len(ss2) Then
-        ss1 = Mid(ss1, k)
-        ss2 = Mid(ss2, k)
-      Else
+    If i = sline Or j = sline2 Then
+      k1 = Text2.SelStart - sbyte + 1 + 1
+      k2 = Text3.SelStart - sbyte2 + 1 + 1
+      If k1 <= Len(ss1) And k2 <= Len(ss2) Then
+        ss1 = Mid(ss1, k1)
+        ss2 = Mid(ss2, k2)
+      ElseIf k1 > Len(ss1) And k2 > Len(ss2) Then
         ss1 = ""
         ss2 = ""
+      Else
+        If k1 <= Len(ss1) Then
+          ss1 = Mid(ss1, k1)
+          k2 = k1
+        Else
+          ss2 = Mid(ss2, k2)
+          k1 = k2
+        End If
       End If
     End If
     If ss1 <> ss2 Then
       Dim ss&: ss = DoTextJump(Text2, s1, curLine1, preSize1, i + 1)
-      Dim ss3&: ss3 = DoTextJump(Text3, s2, curLine2, preSize2, i + 1)
+      Dim ss3&: ss3 = DoTextJump(Text3, s2, curLine2, preSize2, j + 1)
       leng = Len(ss1)
       If Len(ss2) < leng Then: leng = Len(ss2)
       For k = 1 To leng
@@ -359,17 +400,19 @@ Private Sub CommandDiff_Click()
           Exit For
         End If
       Next k
-      Text2.SelStart = ss + k - 1: Text2.SelLength = 0
-      Text3.SelStart = ss3 + k - 1: Text3.SelLength = 0
+      Text2.SelStart = ss + k + IIf(i = sline, k1 - 2, -1): Text2.SelLength = 1
+      Text3.SelStart = ss3 + k + IIf(j = sline2, k2 - 2, -1): Text3.SelLength = 1
       Exit Do
     End If
     If i <= UBound(s1) Then: sbyte = sbyte + Len(s1(i)) + 2
-    i = i + 1
+    If j <= UBound(s2) Then: sbyte2 = sbyte2 + Len(s2(j)) + 2
+    i = i + 1: j = j + 1
   Loop
   Text2.SetFocus
 End Sub
 
 Private Sub CommandFind_Click()
+  BufStr res.out, s1, sbufed1
   Dim str$
   str = ShowDialog("Input which text to find", Me, Text2.SelText)
   If Len(str) = 0 Then: Exit Sub
@@ -396,8 +439,10 @@ End Sub
 Private Sub CommandJump_Click(Index As Integer)
   Dim Text As RichTextBox
   If Index = 0 Then
+    BufStr res.out, s1, sbufed1
     Set Text = Text2
   Else
+    BufStr res.soutcontent, s2, sbufed2
     Set Text = Text3
   End If
   
