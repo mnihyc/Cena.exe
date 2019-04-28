@@ -690,6 +690,7 @@ Private Sub Form_Load()
       .out = ""
       .err = ""
       .runningtime = 0
+      .judging = 0
       .stdreaded = False
       .sincontent = ""
       .soutcontent = ""
