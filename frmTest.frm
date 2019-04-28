@@ -623,7 +623,9 @@ Private Sub cmd_rt_Click(Index As Integer)
   res_id Val(lbl_num(Index)), False
   res(Val(lbl_num(Index))).state = False
   ylbl_num(Index) = ""
+  cmd_rta.Enabled = False
   Call doexec(res(Val(lbl_num(Index))))
+  cmd_rta.Enabled = True
   res_id Val(lbl_num(Index)), True
   cmd_rt(Index).SetFocus
 End Sub
