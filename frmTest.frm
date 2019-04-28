@@ -641,6 +641,7 @@ Public Sub cmd_rta_Click()
   Dim i%
   For i = 1 To stdinnum
     res(i).state = False
+    res(i).judging = 0
     res_id i, False
   Next i
   For i = 0 To 6
