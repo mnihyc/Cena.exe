@@ -207,6 +207,16 @@ Dim sbufed1 As Boolean, sbufed2 As Boolean
 Dim s1() As String, s2() As String
 Dim curLine1&, curLine2&, preSize1&, preSize2&
 
+Private Function GetTextLineCount(Text As RichTextBox)
+  GetTextLineCount = 1
+  Dim i&
+  Do While i <= Text.SelStart
+    i = InStr(i + 1, Text.Text, vbCr)
+    If i = 0 Or i > Text.SelStart Then: Exit Do
+    GetTextLineCount = GetTextLineCount + 1
+  Loop
+End Function
+
 Private Sub BufStr(ByRef s As String, ByRef sa() As String, ByRef sbufed As Boolean)
   If sbufed = False Then
     sbufed = True
@@ -215,15 +225,15 @@ Private Sub BufStr(ByRef s As String, ByRef sa() As String, ByRef sbufed As Bool
   End If
 End Sub
 
-Private Function GetLength(ByRef s As String)
-  GetLength = 0
-  Dim i&, leng&: leng = Len(s)
-  For i = 1 To leng Step 2
-    If Mid(s, i, 1) = vbLf Or Mid(s, i, 1) = vbCr Then
-      GetLength = GetLength + 1
-    End If
-  Next i
-End Function
+'Private Function GetLength(ByRef s As String)
+'  GetLength = 0
+'  Dim i&, leng&: leng = Len(s)
+'  For i = 1 To leng Step 2
+'    If Mid(s, i, 1) = vbLf Or Mid(s, i, 1) = vbCr Then
+'      GetLength = GetLength + 1
+'    End If
+'  Next i
+'End Function
 
 Friend Sub SetRes(tres As type_res)
   res = tres
@@ -351,8 +361,11 @@ Private Sub CommandDiff_Click()
   BufStr res.out, s1, sbufed1
   BufStr res.soutcontent, s2, sbufed2
   Dim i&, j&, ss1$, ss2$, k&, k1&, k2&, leng&
-  Dim sline&: sline = SendMessage(Text2.hwnd, EM_LINEFROMCHAR, Text2.SelStart, 0&) + curLine1 - 1
-  Dim sline2&: sline2 = SendMessage(Text3.hwnd, EM_LINEFROMCHAR, Text3.SelStart, 0&) + curLine2 - 1
+  ' Fix the issue of one long line
+  'Dim sline&: sline = SendMessage(Text2.hwnd, EM_LINEFROMCHAR, Text2.SelStart, 0&) + curLine1 - 1
+  'Dim sline2&: sline2 = SendMessage(Text3.hwnd, EM_LINEFROMCHAR, Text3.SelStart, 0&) + curLine2 - 1
+  Dim sline&: sline = GetTextLineCount(Text2) + curLine1 - 2
+  Dim sline2&: sline2 = GetTextLineCount(Text3) + curLine2 - 2
   Dim sbyte&, sbyte2&: sbyte = preSize1: sbyte2 = preSize2
   For i = curLine1 - 1 To sline - 1
     sbyte = sbyte + Len(s1(i)) + 2
@@ -419,7 +432,9 @@ Private Sub CommandFind_Click()
   str = ShowDialog("Input which text to find", Me, Text2.SelText)
   If Len(str) = 0 Then: Exit Sub
   Dim i&, pos&
-  Dim sline&: sline = SendMessage(Text2.hwnd, EM_LINEFROMCHAR, Text2.SelStart, 0&) + curLine1 - 1
+  ' Fix the issue of one long line
+  'Dim sline&: sline = SendMessage(Text2.hwnd, EM_LINEFROMCHAR, Text2.SelStart, 0&) + curLine1 - 1
+  Dim sline&: sline = GetTextLineCount(Text2) + curLine1 - 2
   Dim sbyte&: sbyte = preSize1
   For i = curLine1 - 1 To sline - 1
     sbyte = sbyte + Len(s1(i)) + 2
@@ -494,9 +509,11 @@ Private Sub Form_Resize()
 End Sub
 
 Private Sub Text2_SelChange()
-  LabelLine1.Caption = "Line: " & Trim(str(SendMessage(Text2.hwnd, EM_LINEFROMCHAR, Text2.SelStart, 0&) + curLine1)) & "/" & Trim(str(UBound(s1) + 1))
+  'LabelLine1.Caption = "Line: " & Trim(str(SendMessage(Text2.hwnd, EM_LINEFROMCHAR, Text2.SelStart, 0&) + curLine1)) & "/" & Trim(str(UBound(s1) + 1))
+  LabelLine1.Caption = "Line: " & Trim(str(GetTextLineCount(Text2) - 1 + curLine1)) & "/" & Trim(str(UBound(s1) + 1))
 End Sub
 
 Private Sub Text3_SelChange()
-  LabelLine2.Caption = "Line: " & Trim(str(SendMessage(Text3.hwnd, EM_LINEFROMCHAR, Text3.SelStart, 0&) + curLine2)) & "/" & Trim(str(UBound(s2) + 1))
+  'LabelLine2.Caption = "Line: " & Trim(str(SendMessage(Text3.hwnd, EM_LINEFROMCHAR, Text3.SelStart, 0&) + curLine2)) & "/" & Trim(str(UBound(s2) + 1))
+  LabelLine2.Caption = "Line: " & Trim(str(GetTextLineCount(Text3) - 1 + curLine2)) & "/" & Trim(str(UBound(s2) + 1))
 End Sub
