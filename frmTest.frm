@@ -1011,6 +1011,7 @@ End Sub
 
 Private Sub lbl_rs_Click(Index As Integer)
 With frmView
+  If Val(lbl_num(Index).Caption) = 0 Then: Exit Sub
   If res(Val(lbl_num(Index).Caption)).state = False Then: Exit Sub
   Call .SetRes(res(Val(lbl_num(Index))))
   Call .ReSet
