@@ -618,7 +618,7 @@ Private Const BUFFER_LENGTH As Long = 102400
 Dim resenabled(1050) As Boolean
 
 Private Sub cmd_rt_Click(Index As Integer)
-  vs1.SetFocus
+  If vs1.Enabled = True Then: vs1.SetFocus
   If Val(lbl_num(Index)) > stdinnum Or Val(lbl_num(Index)) <= 0 Then: Exit Sub
   res_id Val(lbl_num(Index)), False
   res(Val(lbl_num(Index))).state = False

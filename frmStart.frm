@@ -559,6 +559,7 @@ Private Sub funstate(lbl As Label, state As Boolean)
     lbl.Caption = "Yes"
   End If
 End Sub
+
 Private Sub Form_Load()
   Show
   funstate lbl1, False
